@@ -6,7 +6,7 @@ require('dotenv').config();
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+app.use(express.static('public')); //
 // Replicate API Key
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
