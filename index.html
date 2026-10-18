@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <title>Leonardo AI Studio Clone</title>
+  <style>
+    body {
+      background-color: #0f0e17;
+      color: #fffffe;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 800px;
+      background: #1a1926;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    .media-preview {
+      width: 100%;
+      height: 400px;
+      background: #100f1a;
+      border: 1px dashed #3b3754;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    video, img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    input[type="text"], textarea {
+      width: 96%;
+      padding: 12px;
+      background: #232135;
+      border: 1px solid #3b3754;
+      color: white;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      background: #7f5af0;
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.1rem;
+      width: 100%;
+    }
+    button:hover { background: #6b46e5; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <h2>⚡ Leonardo AI - Image & Video Generator</h2>
+
+    <div class="media-preview" id="mediaBox">
+      <p id="placeholderText" style="color: #94a1b2;">आपकी जनरेट की हुई फोटो या वीडियो यहाँ दिखेगी...</p>
+      <img id="outputImg" style="display:none;" />
+      <video id="outputVideo" controls style="display:none;"></video>
+    </div>
+
+    <div class="form-group">
+      <label>Prompt (विवरण लिखें):</label>
+      <textarea id="promptInput" rows="3" placeholder="A cinematic drone shot of futuristic city, 8k resolution..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Image URL (Image-to-Video के लिए):</label>
+      <input type="text" id="imageUrlInput" placeholder="https://example.com/image.jpg (Optional)">
+    </div>
+
+    <button onclick="generateMedia()">Generate AI Video / Photo</button>
+  </div>
+
+  <script>
+    async function generateMedia() {
+      const prompt = document.getElementById('promptInput').value;
+      const imageUrl = document.getElementById('imageUrlInput').value;
+      const placeholder = document.getElementById('placeholderText');
+      const imgElem = document.getElementById('outputImg');
+      const videoElem = document.getElementById('outputVideo');
+
+      if (!prompt) return alert("कृपया Prompt लिखें!");
+
+      placeholder.innerText = "⏳ AI रेंडर हो रहा है, कृपया प्रतीक्षा करें...";
+      imgElem.style.display = "none";
+      videoElem.style.display = "none";
+      placeholder.style.display = "block";
+
+      try {
+        const response = await fetch('http://localhost:5000/api/generate-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl, prompt })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.videoUrl) {
+          placeholder.style.display = "none";
+          videoElem.src = data.videoUrl;
+          videoElem.style.display = "block";
+          videoElem.play();
+        } else {
+          placeholder.innerText = "❌ एरर: " + (data.message || "रेंडर में समस्या आई");
+        }
+      } catch (err) {
+        placeholder.innerText = "❌ बैकएंड सर्वर कनेक्ट नहीं हो पाया!";
+      }
+    }
+  </script>
+
+</body>
+</html>
