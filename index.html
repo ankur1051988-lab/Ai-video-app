@@ -20,21 +20,21 @@
     <!-- Main Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       
-      <!-- Text-to-Speech Section with Stop Button -->
+      <!-- Text-to-Speech Section -->
       <section class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
         <h2 class="text-xl font-semibold text-indigo-300 flex items-center gap-2">
           🗣️ Hindi Text-to-Speech Voice
         </h2>
         <div class="space-y-2">
           <label class="block text-sm font-medium text-slate-300">Script / Dialogue (Hindi/English)</label>
-          <textarea id="ttsInput" rows="5" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Yahan apni script likhein..."></textarea>
+          <textarea id="ttsInput" rows="4" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Yahan apni script likhein..."></textarea>
         </div>
         <div class="flex gap-4">
           <button onclick="handleSpeak()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
             🔊 Play Speech
           </button>
           <button onclick="stopSpeech()" class="flex-1 bg-rose-600 hover:bg-rose-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
-            ⏹️ Stop Speech
+            ⏹️ Stop
           </button>
         </div>
       </section>
@@ -47,7 +47,7 @@
         
         <div class="space-y-2">
           <label class="block text-sm font-medium text-slate-300">PROMPT</label>
-          <textarea id="videoPrompt" rows="3" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="A cinematic shot of a majestic tiger..."></textarea>
+          <textarea id="videoPrompt" rows="2" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="A cinematic shot..."></textarea>
         </div>
 
         <div class="space-y-2">
@@ -59,9 +59,8 @@
           🎬 Generate AI Video
         </button>
 
-        <!-- Status / Result -->
         <div id="statusText" class="text-center text-sm font-medium text-slate-400 hidden">
-          Processing... Please wait a few moments.
+          Processing... Please wait.
         </div>
         
         <div id="videoContainer" class="hidden mt-4">
@@ -71,69 +70,78 @@
 
     </div>
 
-    <!-- Extra Section: Combined Project Editor / Notes -->
+    <!-- Naya Section: Mini Timeline & Video Editor Workspace -->
     <section class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
       <h2 class="text-xl font-semibold text-teal-300 flex items-center gap-2">
-        📝 Project Notes & Scene Planner (Edit on Page)
+        🎬 Mini Timeline & Project Editor (Audio + Video Sync)
       </h2>
-      <p class="text-sm text-slate-400">Yahan aap apni poori video ke alag-alag scenes ki details ya notes likh kar save kar sakte hain taaki editing ke waqt aasani ho.</p>
-      <textarea id="projectNotes" rows="4" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Scene 1: Introduction... \nScene 2: Main story..."></textarea>
-      <button onclick="saveNotes()" class="bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-6 rounded-xl transition duration-200">
-        💾 Save Notes
-      </button>
-      <span id="saveStatus" class="ml-4 text-sm text-green-400 hidden">Saved successfully!</span>
+      <p class="text-sm text-slate-400">Yahan aap apni generated video ka link aur sath me chalne wali voice script daal kar ek sath preview kar sakte hain.</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-300">Video URL (Generated Video Link)</label>
+          <input type="text" id="timelineVideoUrl" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white" placeholder="Video ka link yahan paste karein">
+        </div>
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-300">Voiceover Script for this Scene</label>
+          <input type="text" id="timelineAudioText" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white" placeholder="Is scene ke liye bolne wala text...">
+        </div>
+      </div>
+
+      <div class="flex gap-4 pt-2">
+        <button onclick="previewTimeline()" class="bg-teal-600 hover:bg-teal-500 font-semibold py-3 px-6 rounded-xl transition duration-200 flex-1">
+          ▶️ Play Scene (Video + Voice Together)
+        </button>
+        <button onclick="saveTimelineProject()" class="bg-amber-600 hover:bg-amber-500 font-semibold py-3 px-6 rounded-xl transition duration-200">
+          💾 Save Project
+        </button>
+      </div>
+
+      <!-- Timeline Preview Player Container -->
+      <div id="timelinePreviewContainer" class="hidden mt-4 p-4 bg-slate-900 rounded-xl border border-slate-700 space-y-3">
+        <h3 class="text-sm font-semibold text-teal-400">Live Preview Player</h3>
+        <video id="timelineVideoPlayer" controls class="w-full max-h-60 rounded-lg"></video>
+      </div>
+      <span id="timelineSaveStatus" class="text-sm text-green-400 hidden">Project saved successfully!</span>
     </section>
 
   </div>
 
   <!-- JavaScript Logic -->
   <script>
-    // 1. Text to Speech Engine with Stop
+    // 1. Text to Speech Engine
     function speakText(text) {
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'hi-IN';
-
         const voices = window.speechSynthesis.getVoices();
         const hindiVoice = voices.find(voice => 
           voice.lang.includes('hi') || voice.lang.includes('HI') || voice.name.toLowerCase().includes('hindi')
         );
-        
-        if (hindiVoice) {
-          utterance.voice = hindiVoice;
-        }
-
+        if (hindiVoice) { utterance.voice = hindiVoice; }
         utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
       } else {
-        alert("Aapke browser me Text-to-Speech API support nahi hai.");
+        alert("Text-to-Speech not supported.");
       }
     }
 
     function handleSpeak() {
       const text = document.getElementById('ttsInput').value.trim();
-      if (!text) {
-        alert('Kripya bolne ke liye koi script type karein.');
-        return;
-      }
+      if (!text) { alert('Kripya script likhein.'); return; }
       speakText(text);
     }
 
     function stopSpeech() {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); }
     }
 
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices();
-      };
+      window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
     }
 
-    // 2. Video Generation Engine
+    // 2. Video Generator
     async function generateVideo() {
       const prompt = document.getElementById('videoPrompt').value.trim();
       const imageUrl = document.getElementById('imageUrl').value.trim();
@@ -142,10 +150,7 @@
       const videoContainer = document.getElementById('videoContainer');
       const videoOutput = document.getElementById('videoOutput');
 
-      if (!prompt) {
-        alert('Kripya video banane ke liye Prompt likhein.');
-        return;
-      }
+      if (!prompt) { alert('Prompt likhein.'); return; }
 
       generateBtn.disabled = true;
       generateBtn.innerText = 'Generating Video...';
@@ -158,20 +163,20 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt, imageUrl })
         });
-
         const data = await response.json();
-
         if (data.success && data.videoUrl) {
           videoOutput.src = data.videoUrl;
           videoContainer.classList.remove('hidden');
-          statusText.innerText = 'Video generated successfully!';
+          statusText.innerText = 'Generated successfully!';
+          // Auto-fill timeline video URL for convenience
+          document.getElementById('timelineVideoUrl').value = data.videoUrl;
         } else {
-          alert('Error: ' + (data.message || 'Video generate nahi ho saki.'));
+          alert('Error: ' + (data.message || 'Failed'));
           statusText.classList.add('hidden');
         }
       } catch (err) {
         console.error(err);
-        alert('Server request failed: ' + err.message);
+        alert('Failed: ' + err.message);
         statusText.classList.add('hidden');
       } finally {
         generateBtn.disabled = false;
@@ -179,20 +184,46 @@
       }
     }
 
-    // 3. Save Notes function
-    function saveNotes() {
-      const notes = document.getElementById('projectNotes').value;
-      localStorage.setItem('aiStudioNotes', notes);
-      const status = document.getElementById('saveStatus');
+    // 3. Timeline Preview (Video + Voice together)
+    function previewTimeline() {
+      const videoUrl = document.getElementById('timelineVideoUrl').value.trim();
+      const audioText = document.getElementById('timelineAudioText').value.trim();
+      const container = document.getElementById('timelinePreviewContainer');
+      const player = document.getElementById('timelineVideoPlayer');
+
+      if (!videoUrl) {
+        alert('Kripya pehle Video URL dalein.');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      player.src = videoUrl;
+      player.play();
+
+      // Play corresponding voiceover simultaneously if text exists
+      if (audioText) {
+        speakText(audioText);
+      }
+    }
+
+    // 4. Save Project
+    function saveTimelineProject() {
+      const data = {
+        videoUrl: document.getElementById('timelineVideoUrl').value,
+        audioText: document.getElementById('timelineAudioText').value
+      };
+      localStorage.setItem('aiStudioTimeline', JSON.stringify(data));
+      const status = document.getElementById('timelineSaveStatus');
       status.classList.remove('hidden');
       setTimeout(() => status.classList.add('hidden'), 2000);
     }
 
-    // Load saved notes on startup
     window.onload = function() {
-      const saved = localStorage.getItem('aiStudioNotes');
+      const saved = localStorage.getItem('aiStudioTimeline');
       if (saved) {
-        document.getElementById('projectNotes').value = saved;
+        const data = JSON.parse(saved);
+        document.getElementById('timelineVideoUrl').value = data.videoUrl || '';
+        document.getElementById('timelineAudioText').value = data.audioText || '';
       }
     };
   </script>
