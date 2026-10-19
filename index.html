@@ -1,31 +1,161 @@
-// Hindi & English Support ke saath Text-to-Speech
-function speakText(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel(); // Pehle se chal rahi awaaz ko rokein
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Media Studio Pro</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-4 md:p-8">
 
-    const utterance = new SpeechSynthesisUtterance(text);
+  <div class="max-w-4xl mx-auto space-y-8">
     
-    // Hindi Bhasha Detect / Set Karein
-    utterance.lang = 'hi-IN';
+    <!-- Header -->
+    <header class="text-center space-y-2 border-b border-slate-700 pb-6">
+      <h1 class="text-3xl md:text-4xl font-bold text-indigo-400">AI Media Studio Pro</h1>
+      <p class="text-slate-400">Speech Voice & Video Creation Suite</p>
+    </header>
 
-    // Available Voices me se Hindi voice dhoondhein
-    const voices = window.speechSynthesis.getVoices();
-    const hindiVoice = voices.find(voice => voice.lang.includes('hi') || voice.lang.includes('HI'));
-    
-    if (hindiVoice) {
-      utterance.voice = hindiVoice;
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <!-- Text-to-Speech Section -->
+      <section class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
+        <h2 class="text-xl font-semibold text-indigo-300 flex items-center gap-2">
+          🗣️ Hindi Text-to-Speech Voice
+        </h2>
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-300">Script / Dialogue (Hindi/English)</label>
+          <textarea id="ttsInput" rows="5" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Yahan apni script likhein... (e.g. Namaste, yeh ek AI generated Hindi voiceover hai.)"></textarea>
+        </div>
+        <button onclick="handleSpeak()" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
+          🔊 Speak Script (Awaaz Sunein)
+        </button>
+      </section>
+
+      <!-- AI Video Generator Section -->
+      <section class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
+        <h2 class="text-xl font-semibold text-purple-300 flex items-center gap-2">
+          📹 Text-to-Video Generator
+        </h2>
+        
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-300">PROMPT</label>
+          <textarea id="videoPrompt" rows="3" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="A cinematic shot of a majestic tiger walking in the forest..."></textarea>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-300">IMAGE URL (OPTIONAL)</label>
+          <input type="url" id="imageUrl" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="https://example.com/image.jpg">
+        </div>
+
+        <button id="generateBtn" onclick="generateVideo()" class="w-full bg-purple-600 hover:bg-purple-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
+          🎬 Generate AI Video
+        </button>
+
+        <!-- Status / Result -->
+        <div id="statusText" class="text-center text-sm font-medium text-slate-400 hidden">
+          Processing... Please wait a few moments.
+        </div>
+        
+        <div id="videoContainer" class="hidden mt-4">
+          <video id="videoOutput" controls class="w-full rounded-xl border border-slate-700"></video>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // 1. Text to Speech Engine (Hindi Supported)
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Clear previous speech
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'hi-IN'; // Set Hindi Locale
+
+        // Search for Hindi voice in client browser
+        const voices = window.speechSynthesis.getVoices();
+        const hindiVoice = voices.find(voice => 
+          voice.lang.includes('hi') || voice.lang.includes('HI') || voice.name.toLowerCase().includes('hindi')
+        );
+        
+        if (hindiVoice) {
+          utterance.voice = hindiVoice;
+        }
+
+        utterance.rate = 0.9; // Smooth natural pace
+        window.speechSynthesis.speak(utterance);
+      } else {
+        alert("Aapke browser me Text-to-Speech API support nahi hai.");
+      }
     }
 
-    utterance.rate = 0.9; // Normal bolne ki speed
-    window.speechSynthesis.speak(utterance);
-  } else {
-    alert("Aapke browser me Text-to-Speech support nahi hai.");
-  }
-}
+    // Trigger Speech
+    function handleSpeak() {
+      const text = document.getElementById('ttsInput').value.trim();
+      if (!text) {
+        alert('Kripya bolne ke liye koi script type karein.');
+        return;
+      }
+      speakText(text);
+    }
 
-// Browser Voices Load Hone par Setup
-if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    window.speechSynthesis.getVoices();
-  };
-}
+    // Ensure voices are pre-loaded
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+      };
+    }
+
+    // 2. Video Generation Engine
+    async function generateVideo() {
+      const prompt = document.getElementById('videoPrompt').value.trim();
+      const imageUrl = document.getElementById('imageUrl').value.trim();
+      const generateBtn = document.getElementById('generateBtn');
+      const statusText = document.getElementById('statusText');
+      const videoContainer = document.getElementById('videoContainer');
+      const videoOutput = document.getElementById('videoOutput');
+
+      if (!prompt) {
+        alert('Kripya video banane ke liye Prompt likhein.');
+        return;
+      }
+
+      generateBtn.disabled = true;
+      generateBtn.innerText = 'Generating Video...';
+      statusText.classList.remove('hidden');
+      videoContainer.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/generate-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, imageUrl })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.videoUrl) {
+          videoOutput.src = data.videoUrl;
+          videoContainer.classList.remove('hidden');
+          statusText.innerText = 'Video generated successfully!';
+        } else {
+          alert('Error: ' + (data.message || 'Video generate nahi ho saki.'));
+          statusText.classList.add('hidden');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Server request failed: ' + err.message);
+        statusText.classList.add('hidden');
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.innerText = '🎬 Generate AI Video';
+      }
+    }
+  </script>
+</body>
+</html>
