@@ -20,18 +20,23 @@
     <!-- Main Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       
-      <!-- Text-to-Speech Section -->
+      <!-- Text-to-Speech Section with Stop Button -->
       <section class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
         <h2 class="text-xl font-semibold text-indigo-300 flex items-center gap-2">
           🗣️ Hindi Text-to-Speech Voice
         </h2>
         <div class="space-y-2">
           <label class="block text-sm font-medium text-slate-300">Script / Dialogue (Hindi/English)</label>
-          <textarea id="ttsInput" rows="5" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Yahan apni script likhein... (e.g. Namaste, yeh ek AI generated Hindi voiceover hai.)"></textarea>
+          <textarea id="ttsInput" rows="5" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Yahan apni script likhein..."></textarea>
         </div>
-        <button onclick="handleSpeak()" class="w-full bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
-          🔊 Speak Script (Awaaz Sunein)
-        </button>
+        <div class="flex gap-4">
+          <button onclick="handleSpeak()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
+            🔊 Play Speech
+          </button>
+          <button onclick="stopSpeech()" class="flex-1 bg-rose-600 hover:bg-rose-500 font-semibold py-3 px-4 rounded-xl transition duration-200">
+            ⏹️ Stop Speech
+          </button>
+        </div>
       </section>
 
       <!-- AI Video Generator Section -->
@@ -42,7 +47,7 @@
         
         <div class="space-y-2">
           <label class="block text-sm font-medium text-slate-300">PROMPT</label>
-          <textarea id="videoPrompt" rows="3" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="A cinematic shot of a majestic tiger walking in the forest..."></textarea>
+          <textarea id="videoPrompt" rows="3" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-purple-500 outline-none" placeholder="A cinematic shot of a majestic tiger..."></textarea>
         </div>
 
         <div class="space-y-2">
@@ -65,19 +70,32 @@
       </section>
 
     </div>
+
+    <!-- Extra Section: Combined Project Editor / Notes -->
+    <section class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
+      <h2 class="text-xl font-semibold text-teal-300 flex items-center gap-2">
+        📝 Project Notes & Scene Planner (Edit on Page)
+      </h2>
+      <p class="text-sm text-slate-400">Yahan aap apni poori video ke alag-alag scenes ki details ya notes likh kar save kar sakte hain taaki editing ke waqt aasani ho.</p>
+      <textarea id="projectNotes" rows="4" class="w-full p-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Scene 1: Introduction... \nScene 2: Main story..."></textarea>
+      <button onclick="saveNotes()" class="bg-teal-600 hover:bg-teal-500 font-semibold py-2 px-6 rounded-xl transition duration-200">
+        💾 Save Notes
+      </button>
+      <span id="saveStatus" class="ml-4 text-sm text-green-400 hidden">Saved successfully!</span>
+    </section>
+
   </div>
 
   <!-- JavaScript Logic -->
   <script>
-    // 1. Text to Speech Engine (Hindi Supported)
+    // 1. Text to Speech Engine with Stop
     function speakText(text) {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Clear previous speech
+        window.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'hi-IN'; // Set Hindi Locale
+        utterance.lang = 'hi-IN';
 
-        // Search for Hindi voice in client browser
         const voices = window.speechSynthesis.getVoices();
         const hindiVoice = voices.find(voice => 
           voice.lang.includes('hi') || voice.lang.includes('HI') || voice.name.toLowerCase().includes('hindi')
@@ -87,14 +105,13 @@
           utterance.voice = hindiVoice;
         }
 
-        utterance.rate = 0.9; // Smooth natural pace
+        utterance.rate = 0.9;
         window.speechSynthesis.speak(utterance);
       } else {
         alert("Aapke browser me Text-to-Speech API support nahi hai.");
       }
     }
 
-    // Trigger Speech
     function handleSpeak() {
       const text = document.getElementById('ttsInput').value.trim();
       if (!text) {
@@ -104,7 +121,12 @@
       speakText(text);
     }
 
-    // Ensure voices are pre-loaded
+    function stopSpeech() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
     if ('speechSynthesis' in window) {
       window.speechSynthesis.onvoiceschanged = () => {
         window.speechSynthesis.getVoices();
@@ -156,6 +178,23 @@
         generateBtn.innerText = '🎬 Generate AI Video';
       }
     }
+
+    // 3. Save Notes function
+    function saveNotes() {
+      const notes = document.getElementById('projectNotes').value;
+      localStorage.setItem('aiStudioNotes', notes);
+      const status = document.getElementById('saveStatus');
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 2000);
+    }
+
+    // Load saved notes on startup
+    window.onload = function() {
+      const saved = localStorage.getItem('aiStudioNotes');
+      if (saved) {
+        document.getElementById('projectNotes').value = saved;
+      }
+    };
   </script>
 </body>
 </html>
