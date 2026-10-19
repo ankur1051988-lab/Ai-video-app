@@ -1,45 +1,66 @@
 const express = require('express');
-const Replicate = require('replicate');
 const cors = require('cors');
+const Replicate = require('replicate');
 const path = require('path');
-require('dotenv').config();
 
 const app = express();
-app.use(express.json());
-app.use(cors());
 
-// Serve static files (index.html)
+app.use(cors());
+app.use(express.json());
 app.use(express.static(__dirname));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Replicate API Key
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
 app.post('/api/generate-video', async (req, res) => {
-  const { imageUrl, prompt } = req.body;
-
   try {
-    const output = await replicate.run(
-      "stability-ai/stable-video-diffusion:3f045762d48284e31e54e15264b912f2043f1146c825480749003328e945c26b",
-      {
-        input: {
-          input_image: imageUrl || "https://replicate.delivery/pbxt/IJL1Z2.../input.png",
-          motion_bucket_id: 127,
-          fps: 6
-        }
-      }
-    );
+    const { prompt, imageUrl } = req.body;
 
-    res.json({ success: true, videoUrl: output[0] });
+    if (!prompt) {
+      return res.status(400).json({ success: false, message: 'Prompt is required' });
+    }
+
+    // Minimax Video-01 Model (Fast & High Quality Text-to-Video)
+    const inputConfig = {
+      prompt: prompt,
+    };
+
+    if (imageUrl && imageUrl.trim() !== '') {
+      inputConfig.first_frame_image = imageUrl.trim();
+    }
+
+    const output = await replicate.run("minimax/video-01", {
+      input: inputConfig
+    });
+
+    // Replicate output stream/URL extraction
+    let finalVideoUrl = output;
+    if (Array.isArray(output)) {
+      finalVideoUrl = output[0];
+    } else if (typeof output === 'object' && output.url) {
+      finalVideoUrl = typeof output.url === 'function' ? output.url() : output.url;
+    }
+
+    res.json({
+      success: true,
+      videoUrl: String(finalVideoUrl)
+    });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Error generating video:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to generate video'
+    });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
